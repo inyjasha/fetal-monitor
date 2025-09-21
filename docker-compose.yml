@@ -5,21 +5,15 @@ services:
     build: ./go-ingest
     ports:
       - "8080:8080"
-    volumes:
-      - ./go-ingest:/app
-    depends_on:
-      - ml-service
+   
 
   ml-service:
     build: ./ml-service
     ports:
       - "8000:8000"
-    volumes:
-      - ./ml-service:/app
 
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
+    command: ["npm", "run", "dev"]
