@@ -8,6 +8,11 @@ import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ml.predict import compute_session_features
+
+import math
+
+
 # --------------------
 # Логирование
 # --------------------
@@ -25,6 +30,37 @@ from app.stream import scan_sessions, prepare_session
 # FastAPI app
 # --------------------
 app = FastAPI(title="Fetal Monitor ML Service")
+
+def clean_for_json(data):
+    import math
+    import numpy as np
+
+    if isinstance(data, dict):
+        return {k: clean_for_json(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_for_json(v) for v in data]
+    elif isinstance(data, (float, np.floating)):
+        if math.isnan(data) or math.isinf(data):
+            return None
+        return float(data)
+    elif isinstance(data, (np.integer,)):
+        return int(data)
+    else:
+        return data
+
+
+@app.get("/sessions/{sid}/analysis")
+def session_analysis(sid: str, sample_rate: float = Query(4.0)):
+    sessions = scan_sessions()
+    if sid not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    prepared = prepare_session(sessions[sid], sample_rate=sample_rate)
+    features = compute_session_features(prepared["merged"])
+
+    clean_features = clean_for_json(features)
+
+    return {"meta": prepared["meta"], "features": clean_features}
+
 
 # CORS (для фронтенда)
 app.add_middleware(
@@ -66,6 +102,8 @@ def session_info(sid: str, sample_rate: float = Query(4.0, description="Част
         "n_samples": len(prepared["merged"]),
         "warnings": prepared["warnings"],
     }
+
+
 
 
 # --------------------

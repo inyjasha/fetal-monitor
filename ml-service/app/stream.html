@@ -3,20 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <title>Fetal Monitor Stream</title>
+<style>
+  body { font-family: sans-serif; margin: 20px; }
+  #log { 
+    background: #111; 
+    color: #0f0; 
+    padding: 10px; 
+    height: 300px; 
+    overflow-y: scroll; 
+    white-space: pre; 
+  }
+  #analysis {
+    background: #f0f0f0;
+    padding: 10px;
+    margin-top: 20px;
+    border: 1px solid #ccc;
+  }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+  table, th, td { border: 1px solid #aaa; padding: 4px; text-align: center; }
+  th { background: #ddd; }
+</style>
 </head>
 <body>
-<h1>Потоковая сессия</h1>
-<label>Session ID: <input id="sid" value="20250908-07500001"></label>
-<button onclick="startStream()">Старт</button>
+<h1>📡 Потоковая сессия Fetal Monitor</h1>
+
+<label>Session ID: 
+  <input id="sid" value="1">
+</label>
+<button onclick="startStream()">Старт стрима</button>
+
+<h2>Данные</h2>
 <pre id="log"></pre>
+
+<h2>Предсказания модели</h2>
+<div id="analysis">Нажмите "Старт", чтобы загрузить</div>
 
 <script>
 let ws;
 
-function startStream() {
+async function startStream() {
     const sid = document.getElementById("sid").value;
-    ws = new WebSocket(`ws://localhost:8001/ws/stream/${sid}`);
     const log = document.getElementById("log");
+    const analysisDiv = document.getElementById("analysis");
+    log.textContent = "";
+    analysisDiv.textContent = "Загрузка предсказаний...";
+
+    // 1. Подключаем WebSocket
+    ws = new WebSocket(`ws://localhost:8001/ws/stream/${sid}`);
 
     ws.onmessage = function(event) {
         const msg = JSON.parse(event.data);
@@ -26,10 +59,50 @@ function startStream() {
             log.textContent += `=== META ===\n${JSON.stringify(msg.meta, null, 2)}\n`;
         }
         log.scrollTop = log.scrollHeight;
-    }
+    };
 
     ws.onclose = function() {
-        log.textContent += "\nСоединение закрыто";
+        log.textContent += "\n❌ Соединение закрыто";
+    };
+
+    // 2. Подгружаем предсказания через REST API
+    try {
+        const resp = await fetch(`http://localhost:8001/sessions/${sid}/analysis`);
+        if (!resp.ok) {
+            analysisDiv.textContent = "Ошибка анализа: " + resp.statusText;
+            return;
+        }
+        const data = await resp.json();
+
+        // Отображаем базовую информацию
+        let html = `
+          <b>Session:</b> ${data.meta.session_id} <br>
+          <b>Group:</b> ${data.meta.group} <br>
+        `;
+
+        // Децелерации
+        if(data.features.decelerations && data.features.decelerations.length > 0) {
+            html += "<h3>Децелерации</h3><table><tr><th>Начало</th><th>Конец</th><th>Длительность</th></tr>";
+            data.features.decelerations.forEach(d => {
+                html += `<tr><td>${d.start.toFixed(2)}</td><td>${d.end.toFixed(2)}</td><td>${d.duration.toFixed(2)}</td></tr>`;
+            });
+            html += "</table>";
+        } else {
+            html += "<p>Децелерации не обнаружены</p>";
+        }
+
+        // Тахикардии
+        if(data.features.tachy_indices && data.features.tachy_indices.length > 0) {
+            html += `<h3>Тахикардии (всего ${data.features.tachy_indices.length})</h3>`;
+            html += `<p>${data.features.tachy_indices.slice(0,50).join(", ")} ...</p>`;
+        } else {
+            html += "<p>Тахикардии не обнаружены</p>";
+        }
+
+        analysisDiv.innerHTML = html;
+
+    } catch (err) {
+        analysisDiv.textContent = "Ошибка загрузки анализа: " + err;
     }
 }
 </script>

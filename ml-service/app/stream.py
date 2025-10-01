@@ -21,6 +21,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPExceptio
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from scipy.signal import savgol_filter
+
+from collections import OrderedDict
+
 # Включаем базовое логирование
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ml-service")
@@ -48,17 +52,65 @@ class SessionInfo(BaseModel):
 # Сканирование папок сессий
 # --------------------
 def scan_sessions(data_root: str = DATA_ROOT) -> Dict[str, SessionInfo]:
-    """
-    Ищет все доступные сессии в папке data_root.
-    Структура:
-      data_root/{group}/{folder}/{bpm,uterus}/*.csv
-    session_id берется из префикса имени файла: 20250908-07500001_1.csv → 20250908-07500001
-    """
     sessions: Dict[str, SessionInfo] = {}
+    
     for group in GROUPS:
         grp_path = os.path.join(data_root, group)
         if not os.path.isdir(grp_path):
             continue
+            
+        for folder in sorted(os.listdir(grp_path)):
+            folder_path = os.path.join(grp_path, folder)
+            if not os.path.isdir(folder_path):
+                continue
+
+            bpm_dir = os.path.join(folder_path, "bpm")
+            uter_dir = os.path.join(folder_path, "uterus")
+
+            bpm_files, uterus_files = [], []
+
+            if os.path.isdir(bpm_dir):
+                for fname in sorted(os.listdir(bpm_dir)):
+                    if fname.lower().endswith(".csv"):
+                        bpm_files.append(os.path.join(bpm_dir, fname))
+
+            if os.path.isdir(uter_dir):
+                for fname in sorted(os.listdir(uter_dir)):
+                    if fname.lower().endswith(".csv"):
+                        uterus_files.append(os.path.join(uter_dir, fname))
+
+            if not bpm_files and not uterus_files:
+                continue
+
+            sid = folder  
+
+            si = SessionInfo(
+                group=group,
+                folder_id=folder,
+                session_id=sid,
+                bpm_files=sorted(bpm_files),
+                uterus_files=sorted(uterus_files),
+            )
+
+            logger.info(f"Сессия {sid}: {len(bpm_files)} BPM файлов, {len(uterus_files)} Uterus файлов")
+            sessions[sid] = si
+
+    logger.info(f"Найдено {len(sessions)} сессий")
+    return sessions
+
+    """
+    Ищет все доступные сессии в папке data_root.
+    Структура:
+      data_root/{group}/{folder}/{bpm,uterus}/*.csv
+    session_id берется из основной части имени файла до последнего подчеркивания
+    """
+    sessions: Dict[str, SessionInfo] = {}
+    
+    for group in GROUPS:
+        grp_path = os.path.join(data_root, group)
+        if not os.path.isdir(grp_path):
+            continue
+            
         for folder in sorted(os.listdir(grp_path)):
             folder_path = os.path.join(grp_path, folder)
             if not os.path.isdir(folder_path):
@@ -68,27 +120,51 @@ def scan_sessions(data_root: str = DATA_ROOT) -> Dict[str, SessionInfo]:
             uter_dir = os.path.join(folder_path, "uterus")
 
             files_by_session = {}
+            
             # Собираем bpm и uterus файлы
-            for dpath, dtype in ((bpm_dir, "bpm"), (uter_dir, "uterus")):
+            for dpath, dtype in [(bpm_dir, "bpm"), (uter_dir, "uterus")]:
                 if not os.path.isdir(dpath):
+                    logger.warning(f"Папка {dpath} не существует")
                     continue
+                    
                 for fname in sorted(os.listdir(dpath)):
                     if not fname.lower().endswith(".csv"):
                         continue
-                    # Берем часть имени файла до "_" → session_id
-                    session_prefix = fname.split("_")[0]
+                    
+                    # Извлекаем session_id: берем часть до последнего подчеркивания
+                    # Например: 20250908-07500001_1.csv → 20250908-07500001
+                    if '_' in fname:
+                        session_prefix = fname.rsplit('_', 1)[0]
+                    else:
+                        session_prefix = fname.split('.')[0]  # если нет подчеркивания
+                    
                     files_by_session.setdefault(session_prefix, {"bpm": [], "uterus": []})
-                    files_by_session[session_prefix][dtype].append(os.path.join(dpath, fname))
+                    full_path = os.path.join(dpath, fname)
+                    files_by_session[session_prefix][dtype].append(full_path)
+                    
+                    logger.info(f"Найден файл: {full_path} → session: {session_prefix}")
 
             # Создаем SessionInfo для каждой сессии
             for sid, filemap in files_by_session.items():
+                # Сортируем файлы по имени (чтобы шли в правильном порядке)
+                bpm_files = sorted(filemap.get("bpm", []))
+                uterus_files = sorted(filemap.get("uterus", []))
+                
                 si = SessionInfo(
                     group=group,
                     folder_id=folder,
                     session_id=sid,
-                    bpm_files=sorted(filemap.get("bpm", [])),
-                    uterus_files=sorted(filemap.get("uterus", [])),
+                    bpm_files=bpm_files,
+                    uterus_files=uterus_files,
                 )
+                
+                # Логируем информацию о найденных файлах
+                logger.info(f"Сессия {sid}: {len(bpm_files)} BPM файлов, {len(uterus_files)} uterus файлов")
+                for bpm_file in bpm_files:
+                    logger.info(f"  BPM: {os.path.basename(bpm_file)}")
+                for uterus_file in uterus_files:
+                    logger.info(f"  Uterus: {os.path.basename(uterus_file)}")
+                
                 sessions[sid] = si
 
     logger.info(f"Найдено {len(sessions)} сессий")
@@ -100,45 +176,40 @@ def scan_sessions(data_root: str = DATA_ROOT) -> Dict[str, SessionInfo]:
 # --------------------
 def read_and_concat_files(file_list: List[str], time_col: str = "time_sec", value_col: str = "value") -> pd.DataFrame:
     """
-    Каждый CSV файл обычно начинается с time_sec = 0.
-    Объединяем файлы, смещая время так, чтобы получился непрерывный ряд.
-    Возвращает DataFrame с колонками ["time", "value"].
+    Склеивает несколько файлов подряд.
+    Следующий файл начинается сразу после конца предыдущего.
     """
     if not file_list:
         return pd.DataFrame(columns=["time", "value"])
 
     parts = []
-    offset = 0.0
-    for fp in file_list:
-        try:
-            df = pd.read_csv(fp, usecols=[time_col, value_col])
-        except Exception as e:
-            logger.warning(f"Ошибка чтения {fp}: {e}")
-            continue
-        df = df.rename(columns={time_col: "time", value_col: "value"})
-        df["time"] = pd.to_numeric(df["time"], errors="coerce")
-        df["value"] = pd.to_numeric(df["value"], errors="coerce")
+    time_offset = 0.0
 
+    for idx, fp in enumerate(sorted(file_list)):
+        df = pd.read_csv(fp, usecols=[time_col, value_col])
         if df.empty:
             continue
 
-        # Если файл начинается с 0 → добавляем смещение
-        if df["time"].iloc[0] <= 1.0:
-            df["time"] += offset
-            offset = float(df["time"].iloc[-1]) + (np.median(np.diff(df["time"])) if len(df) > 1 else 0.0)
-        else:
-            # Если уже абсолютные времена → корректируем при необходимости
-            if df["time"].iloc[0] < offset:
-                shift = offset - df["time"].iloc[0] + 0.001
-                df["time"] += shift
-            offset = float(df["time"].iloc[-1])
+        df = df.rename(columns={time_col: "time", value_col: "value"})
+        df = df.dropna()
 
-        parts.append(df[["time", "value"]])
+        # нормализуем время внутри файла: начинаем с 0
+        df["time"] = df["time"] - df["time"].iloc[0]
 
-    if not parts:
-        return pd.DataFrame(columns=["time", "value"])
+        # сдвигаем на накопленный offset
+        df["time"] += time_offset
 
-    return pd.concat(parts, ignore_index=True).sort_values("time").reset_index(drop=True)
+        # обновляем offset для следующего файла
+        time_offset = df["time"].iloc[-1] + (df["time"].iloc[1] - df["time"].iloc[0])
+
+        parts.append(df)
+
+        logger.info(f"{os.path.basename(fp)}: {len(df)} точек, глобальное время {df['time'].iloc[0]:.2f}–{df['time'].iloc[-1]:.2f}")
+
+    return pd.concat(parts, ignore_index=True)
+
+
+
 
 
 # --------------------
@@ -245,26 +316,50 @@ def prepare_session(session: SessionInfo, sample_rate: float = 4.0,
       "meta": {...}
     }
     """
+
+    # ---- 1. Проверка кэша ----
+    cache_key = f"{session.session_id}_{sample_rate}_{median_kernel}_{ema_span}"
+    if cache_key in SESSION_CACHE:
+        logger.info(f"Используем кэш для {cache_key}")
+        return SESSION_CACHE[cache_key]
+
+    # ---- 2. Чтение CSV ----
     bpm_df = read_and_concat_files(session.bpm_files)
     uter_df = read_and_concat_files(session.uterus_files)
 
-    merged, warnings = resample_and_merge(bpm_df, uter_df, sample_rate=sample_rate,
-                                          interp_limit_s=interp_limit_s, gap_warn_s=gap_warn_s)
+    # ---- 3. Ресемплинг и объединение ----
+    merged, warnings = resample_and_merge(
+        bpm_df, uter_df,
+        sample_rate=sample_rate,
+        interp_limit_s=interp_limit_s,
+        gap_warn_s=gap_warn_s
+    )
 
-    # Фильтрация bpm
+    # ---- 4. Фильтрация bpm ----
     if merged["bpm"].notna().any():
-        arr = apply_median_filter(merged["bpm"].to_numpy(), kernel=median_kernel)
-        arr = remove_spikes(arr)
-        merged["bpm_filtered"] = arr
-        merged["bpm_baseline"] = apply_ema(arr, span=ema_span)
+        bpm_proc = enhanced_preprocessing(
+            merged["bpm"].to_numpy(),
+            median_kernel=median_kernel,
+            ema_span=ema_span
+        )
+        merged["bpm_filtered"] = bpm_proc["filtered"]
+        merged["bpm_baseline"] = bpm_proc["baseline"]
+        merged["bpm_smooth"] = bpm_proc["smooth"]
+        merged["bpm_deviation"] = bpm_proc["deviation"]
 
-    # Фильтрация uterus
+    # ---- 5. Фильтрация uterus ----
     if merged["uterus"].notna().any():
-        arr = apply_median_filter(merged["uterus"].to_numpy(), kernel=median_kernel)
-        arr = remove_spikes(arr)
-        merged["uterus_filtered"] = arr
-        merged["uterus_baseline"] = apply_ema(arr, span=ema_span)
+        uter_proc = enhanced_preprocessing(
+            merged["uterus"].to_numpy(),
+            median_kernel=median_kernel,
+            ema_span=ema_span
+        )
+        merged["uterus_filtered"] = uter_proc["filtered"]
+        merged["uterus_baseline"] = uter_proc["baseline"]
+        merged["uterus_smooth"] = uter_proc["smooth"]
+        merged["uterus_deviation"] = uter_proc["deviation"]
 
+    # ---- 6. Метаданные ----
     meta = {
         "session_id": session.session_id,
         "group": session.group,
@@ -273,7 +368,18 @@ def prepare_session(session: SessionInfo, sample_rate: float = 4.0,
         "end_time": float(merged["time"].iloc[-1]) if not merged.empty else None,
     }
 
-    return {"session": session, "merged": merged, "warnings": warnings, "meta": meta}
+    result = {
+        "session": session,
+        "merged": merged,
+        "warnings": warnings,
+        "meta": meta
+    }
+
+    # ---- 7. Сохраняем в кэш ----
+    SESSION_CACHE[cache_key] = result
+    logger.info(f"Сессия {cache_key} добавлена в кэш")
+
+    return result
 
 
 # --------------------
@@ -332,7 +438,50 @@ async def ws_stream(websocket: WebSocket, sid: str, sample_rate: float = 4.0):
         logger.info("Клиент отключился")
 
 
+
+# --------------------
+# Ограниченный кэш сессий (FIFO)
+# --------------------
+class SessionCache(OrderedDict):
+    def __init__(self, maxsize: int = 20):
+        super().__init__()
+        self.maxsize = maxsize
+
+    def __setitem__(self, key, value):
+        if key in self:
+            del self[key]  # обновляем порядок
+        elif len(self) >= self.maxsize:
+            self.popitem(last=False)  # удаляем самую старую
+        super().__setitem__(key, value)
+
+
+SESSION_CACHE = SessionCache(maxsize=20)
+
+
 # Запуск напрямую (если не через Docker)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=False)
+
+def enhanced_preprocessing(arr: np.ndarray, median_kernel: int = 3, ema_span: int = 20, sg_window: int = 7, sg_poly: int = 2) -> Dict[str, np.ndarray]:
+    """
+    Усиленная предобработка сигнала:
+    - медианный фильтр
+    - удаление спайков
+    - EMA baseline
+    - Savitzky-Golay сглаживание
+    """
+    arr_filtered = apply_median_filter(arr, kernel=median_kernel)
+    arr_filtered = remove_spikes(arr_filtered)
+    baseline = apply_ema(arr_filtered, span=ema_span)
+    arr_smooth = savgol_filter(arr_filtered, window_length=sg_window, polyorder=sg_poly, mode='interp')
+    
+    return {
+        "filtered": arr_filtered,
+        "baseline": baseline,
+        "smooth": arr_smooth,
+        "deviation": arr_filtered - baseline
+    }
+
+
+
