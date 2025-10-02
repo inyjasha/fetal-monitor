@@ -75,15 +75,21 @@ function logout() {
     }
 }
 
-// Функция показа истории КГТ
+// Функция показа истории КГТ - ОТКРЫВАЕТ АРХИВ ПРИЕМОВ
 function showKgtHistory() {
-    alert('Открывается история КГТ пациента');
-    // В реальном приложении здесь будет переход на страницу истории КГТ
+    // Сохраняем данные пациента в sessionStorage для передачи в архив
+    sessionStorage.setItem('selectedPatient', JSON.stringify({
+        id: patientData.id,
+        fullName: patientData.fullName
+    }));
+
+    // Переходим на страницу архива
+    window.location.href = 'archive.html';
 }
 
 // Функция проведения нового КГТ
 function conductNewKgt() {
-    window.location.href = '../templates/startKGT.html'
+    window.location.href = '../templates/startKGT.html';
     // В реальном приложении здесь будет переход на страницу проведения КГТ
 }
 

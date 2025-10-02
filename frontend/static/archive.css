@@ -653,6 +653,111 @@ body {
     font-style: italic;
 }
 
+.selected-patient-bar {
+    background-color: #2196F3;
+    color: white;
+    padding: 15px 25px;
+    border-radius: var(--radius-medium);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: justify;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    box-shadow: var(--shadow-medium);
+    -webkit-box-shadow: var(--shadow-medium);
+}
+
+.selected-patient-info {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.selected-patient-label {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.selected-patient-name {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.clear-filter-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: var(--radius-small);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    -webkit-transition: background-color var(--transition-normal);
+    -o-transition: background-color var(--transition-normal);
+    transition: background-color var(--transition-normal);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.clear-filter-btn:hover,
+.clear-filter-btn:focus {
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+}
+
+/* Действия раздела */
+.section-actions {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    color: var(--color-text);
+    color: #593e23;
+    border: none;
+    padding: 8px 15px;
+    border-radius: var(--radius-medium);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    -webkit-transition: background-color var(--transition-normal);
+    -o-transition: background-color var(--transition-normal);
+    transition: background-color var(--transition-normal);
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    gap: 5px;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 40px;
+}
+
+.action-btn:hover,
+.action-btn:focus {
+    background-color: var(--color-accent);
+    background-color: #f0d5b8;
+    outline: none;
+}
+
+.action-icon {
+    font-size: 16px;
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .header {
@@ -718,9 +823,51 @@ body {
 
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .selected-patient-bar {
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        gap: 10px;
+        -webkit-box-align: start;
+        -ms-flex-align: start;
+        align-items: flex-start;
+    }
+
+    .section-actions {
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .action-btn {
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
+    .selected-patient-info {
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        -webkit-box-align: start;
+        -ms-flex-align: start;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .clear-filter-btn {
+        width: 100%;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+    }
     .nav-links {
         -webkit-box-orient: vertical;
         -webkit-box-direction: normal;
