@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile.arm
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONPATH=/app
+      - DATA_ROOT=/app/data
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./ml-service/data:/app/data:rw
+      - ./ml-service/app:/app/app:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import requests; exit(0 if requests.get('http://localhost:8001/api/ping').status_code == 200 else 1)\""]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    restart: unless-stopped
+    networks:
+      - fetal-monitor-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.arm
+    ports:
+      - "80:80"
+    depends_on:
+      ml-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+    restart: unless-stopped
+    networks:
+      - fetal-monitor-network
+
+networks:
+  fetal-monitor-network:
+    driver: bridge

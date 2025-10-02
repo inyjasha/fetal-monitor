@@ -251,7 +251,7 @@ body {
     gap: 30px;
 }
 
-/* Секция графиков */
+/* Секция графиков - УВЕЛИЧЕНА */
 .graphs-section {
     background-color: var(--color-header);
     background-color: #ddc4a7;
@@ -260,35 +260,40 @@ body {
     border-radius: 15px;
     box-shadow: var(--shadow-medium);
     -webkit-box-shadow: var(--shadow-medium);
+    min-height: 800px; /* Увеличиваем минимальную высоту */
 }
 
 .section-title {
     font-size: 22px;
-    margin-bottom: 20px;
+    margin-bottom: 25px; /* Увеличиваем отступ */
     text-align: center;
     font-weight: bold;
 }
 
+/* КОНТЕЙНЕРЫ ГРАФИКОВ - УВЕЛИЧЕНЫ */
 .graph-container {
     background-color: #1a1a1a;
     border-radius: var(--radius-medium);
     border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 25px;
+    padding: 20px; /* Увеличиваем padding */
+    margin-bottom: 30px; /* Увеличиваем отступ между графиками */
     position: relative;
-    height: 200px;
+    height: 300px; /* УВЕЛИЧИВАЕМ ВЫСОТУ ГРАФИКОВ */
+    min-height: 300px;
 }
 
 .graph-title {
     color: #fce7d2;
-    font-size: 16px;
-    margin-bottom: 10px;
+    font-size: 18px; /* Увеличиваем шрифт */
+    margin-bottom: 15px; /* Увеличиваем отступ */
     text-align: center;
+    font-weight: bold;
 }
 
+/* CANVAS - УВЕЛИЧЕН */
 .graph-canvas {
     width: 100%;
-    height: 150px;
+    height: calc(100% - 30px); /* Занимает всю доступную высоту */
     background-color: #000;
     border-radius: var(--radius-small);
     border-radius: 5px;
@@ -355,6 +360,7 @@ body {
     -ms-flex-pack: center;
     justify-content: center;
     gap: 15px;
+    margin-top: 20px; /* Добавляем отступ сверху */
 }
 
 .control-btn {
@@ -631,6 +637,121 @@ body {
     background: var(--color-text);
     background: #593e23;
 }
+
+/* Блок аналитики */
+.analytics-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 2px solid var(--color-background);
+    border-top: 2px solid #fce7d2;
+}
+
+.analytics-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--color-text);
+    color: #593e23;
+}
+
+.analytics-card {
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    padding: 15px;
+    border-radius: var(--radius-medium);
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 4px solid #2196F3;
+}
+
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.analytics-label {
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--color-text);
+    color: #593e23;
+}
+
+.analytics-value {
+    font-weight: bold;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: var(--radius-small);
+    border-radius: 4px;
+}
+
+.analytics-value.risk-level.high {
+    background-color: #f44336;
+    color: white;
+}
+
+.analytics-value.risk-level.medium {
+    background-color: #FFC107;
+    color: var(--color-text);
+    color: #593e23;
+}
+
+.analytics-value.risk-level.low {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.analytics-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.trend-indicator,
+.confidence-level,
+.risk-score,
+.risk-factors,
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.trend-label,
+.confidence-label,
+.risk-label,
+.factors-label,
+.stat-label {
+    color: var(--color-text);
+    color: #593e23;
+    opacity: 0.8;
+}
+
+.trend-direction,
+.confidence-value,
+.risk-value,
+.factors-value,
+.stat-value {
+    font-weight: bold;
+    color: var(--color-text);
+    color: #593e23;
+}
+
+/* Цвета для трендов */
+.trend-direction.rising {
+    color: #f44336;
+}
+
+.trend-direction.falling {
+    color: #4CAF50;
+}
+
+.trend-direction.stable {
+    color: #2196F3;
+}
+
 /* Адаптивность */
 @media (max-width: 1024px) {
     .kgt-content {
@@ -642,6 +763,11 @@ body {
         -webkit-box-ordinal-group: 0;
         -ms-flex-order: -1;
         order: -1;
+    }
+    
+    /* На мобильных устройствах графики тоже большие */
+    .graph-container {
+        height: 250px;
     }
 }
 
@@ -710,6 +836,17 @@ body {
         margin-top: 20px;
         padding-top: 15px;
     }
+    
+    /* На маленьких экранах графики адаптируются */
+    .graph-container {
+        height: 200px;
+        padding: 15px;
+    }
+    
+    .graphs-section {
+        padding: 20px;
+        min-height: auto;
+    }
 }
 
 @media (max-width: 480px) {
@@ -740,7 +877,7 @@ body {
     }
 
     .graph-container {
-        height: 150px;
+        height: 180px; /* Минимальная высота на очень маленьких экранах */
     }
 
     .control-btn {
@@ -802,5 +939,65 @@ canvas {
 
     .graph-canvas {
         background-color: #1a1a1a;
+    }
+}
+
+/* Адаптивность для аналитики */
+@media (max-width: 768px) {
+    .analytics-card {
+        padding: 12px;
+    }
+    
+    .analytics-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .analytics-value {
+        align-self: flex-start;
+    }
+}
+
+/* Специальные стили для лучшего отображения графиков */
+.graph-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.graph-canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+/* Улучшенные стили для сетки графиков */
+.graph-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-small);
+    border-radius: 5px;
+}
+
+/* Анимация появления графиков */
+.graph-canvas {
+    opacity: 0;
+    animation: fadeIn 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

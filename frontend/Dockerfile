@@ -1,14 +1,15 @@
-FROM node:18-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+# Копируем статические файлы
+COPY static /usr/share/nginx/html/static
+COPY templates /usr/share/nginx/html/templates
 
-COPY package*.json ./
+# Копируем конфигурацию nginx
+COPY nginx.conf /etc/nginx/nginx.conf
 
-RUN npm install
+# Создаем симлинки для правильной работы маршрутизации
+RUN ln -sf /usr/share/nginx/html/templates/main.html /usr/share/nginx/html/index.html
 
-COPY . .
+EXPOSE 80
 
-EXPOSE 3000
-
-
-CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["nginx", "-g", "daemon off;"]

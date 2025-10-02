@@ -1,5 +1,8 @@
 fetal-monitor
 |
+|..frontend
+    |..static
+|
 |..ml-service
     |..app
         |..data

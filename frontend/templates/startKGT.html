@@ -67,16 +67,16 @@
 
             <!-- Управление -->
             <div class="controls-section">
-                <button class="control-btn" id="startBtn" onclick="startMonitoring()">Начать мониторинг</button>
+                <button class="control-btn" id="startBtn" onclick="startRealTimeMonitoring()">Начать мониторинг</button>
                 <button class="control-btn" id="stopBtn" onclick="stopMonitoring()" disabled>Остановить</button>
                 <button class="control-btn" id="loadKgtBtn" onclick="loadKGTFromDB()">Загрузить КГТ</button>
-                <button class="control-btn" id="saveBtn" onclick="saveResults()" disabled>Сохранить результаты</button>
+                <button class="control-btn" id="saveBtn" onclick="saveResults()" disabled>Сохранить отчет</button>
             </div>
 
             <div class="timer" id="timer">Время: 00:00</div>
         </div>
 
-        <!-- Правая часть - Показатели матери -->
+        <!-- Правая часть - Показатели матери и аналитика -->
         <div class="vital-signs-section">
             <h2 class="vital-signs-title">Показатели матери</h2>
             <div class="vital-signs-grid">
@@ -110,7 +110,69 @@
                 </div>
             </div>
 
-            <!-- Блок истории КГТ -->
+            <!-- Блок аналитики и предсказаний (ПЕРВЫМ - ВЫШЕ) -->
+            <div class="analytics-section">
+                <h3 class="analytics-title">Аналитика в реальном времени</h3>
+                
+                <!-- Тренд ЧСС -->
+                <div class="analytics-card">
+                    <div class="analytics-header">
+                        <span class="analytics-label">Тренд ЧСС плода</span>
+                        <span class="analytics-value" id="trendValue">-</span>
+                    </div>
+                    <div class="analytics-details">
+                        <div class="trend-indicator">
+                            <span class="trend-label">Направление:</span>
+                            <span class="trend-direction" id="trendDirection">Неизвестно</span>
+                        </div>
+                        <div class="confidence-level">
+                            <span class="confidence-label">Уверенность:</span>
+                            <span class="confidence-value" id="confidenceValue">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Оценка риска -->
+                <div class="analytics-card">
+                    <div class="analytics-header">
+                        <span class="analytics-label">Оценка риска</span>
+                        <span class="analytics-value risk-level" id="riskLevel">-</span>
+                    </div>
+                    <div class="analytics-details">
+                        <div class="risk-score">
+                            <span class="risk-label">Уровень риска:</span>
+                            <span class="risk-value" id="riskScore">0.0</span>
+                        </div>
+                        <div class="risk-factors">
+                            <span class="factors-label">Факторы:</span>
+                            <span class="factors-value" id="riskFactors">Нет данных</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Статистика -->
+                <div class="analytics-card">
+                    <div class="analytics-header">
+                        <span class="analytics-label">Статистика за 1 мин</span>
+                    </div>
+                    <div class="analytics-details">
+                        <div class="stat-item">
+                            <span class="stat-label">Средняя ЧСС:</span>
+                            <span class="stat-value" id="meanBPM">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Медиана ЧСС:</span>
+                            <span class="stat-value" id="medianBPM">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Вариабельность:</span>
+                            <span class="stat-value" id="variability">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Блок истории КГТ (ВТОРЫМ - НИЖЕ) -->
             <div class="kgt-history-section">
                 <h3 class="kgt-history-title">История КГТ пациента</h3>
                 <div class="kgt-history-list" id="kgtHistoryList">
@@ -119,8 +181,13 @@
             </div>
         </div>
     </div>
+
+    
+    
 </main>
 
 <script src="../static/startKGT.js"></script>
+
+
 </body>
 </html>
