@@ -11,13 +11,15 @@ import json
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
 
 from app.ml.patient_data import patient_manager
 
 from app.ml.report_generator import report_generator
 from fastapi.responses import FileResponse
 import tempfile
+
+from app.auth import router as auth_router
+
 
 # --------------------
 # Логирование
@@ -32,6 +34,11 @@ sys.path.append(PROJECT_ROOT)
 # Импортируем функции из stream.py
 from app.stream import scan_sessions, prepare_session
 
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.patients_search import router as patients_router
+
+
 # --------------------
 # FastAPI app
 # --------------------
@@ -45,6 +52,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # --------------------
 # Вспомогательные функции для анализа
@@ -420,6 +428,8 @@ async def websocket_stream(websocket: WebSocket, sid: str, sample_rate: float = 
         logger.error(f"Ошибка в WebSocket потоке: {e}")
         await websocket.send_json({"type": "error", "message": str(e)})
 
+app.include_router(auth_router)
+app.include_router(patients_router)
 
 @app.get("/sessions/{sid}/report")
 def generate_session_report(sid: str):
