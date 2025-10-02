@@ -48,16 +48,80 @@
     display: inline-block;
     font-size: 0.9em;
   }
+  
+  .report-preview {
+    background: white; 
+    border: 2px solid #ccc; 
+    padding: 20px; 
+    margin-top: 10px; 
+    border-radius: 5px;
+  }
+  
+  .button-group {
+    margin: 20px 0;
+  }
+  
+  .btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+    font-size: 14px;
+  }
+  
+  .btn-preview {
+    background-color: #2196F3;
+  }
+  
+  .btn:hover {
+    opacity: 0.8;
+  }
+  
+  .status-message {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  .status-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  .status-loading {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+  }
 </style>
 </head>
 <body>
 <h1>📡 Потоковая сессия Fetal Monitor</h1>
 
-<label>Session ID: 
-  <input id="sid" value="1">
-</label>
-<button onclick="startStream()">Старт стрима</button>
-<button onclick="stopStream()" style="background-color: #ffcccc;">Стоп</button>
+<div class="button-group">
+  <label>Session ID: 
+    <input id="sid" value="2" style="padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
+  </label>
+  <button class="btn" onclick="startStream()">Старт стрима</button>
+  <button class="btn" onclick="stopStream()" style="background-color: #ff4444;">Стоп</button>
+</div>
+
+<div class="button-group">
+  <button class="btn" onclick="generateReport()">📄 Сгенерировать PDF отчет</button>
+  <button class="btn btn-preview" onclick="previewReport()">👁️ Предпросмотр отчета</button>
+</div>
+
+<div id="reportStatus"></div>
 
 <h2>Данные в реальном времени</h2>
 <pre id="log"></pre>
@@ -175,6 +239,103 @@ function updatePatientInfo(patientData) {
         ` : ''}
     `;
     patientDiv.innerHTML = html;
+}
+
+async function generateReport() {
+    const sid = document.getElementById("sid").value;
+    const statusDiv = document.getElementById("reportStatus");
+    
+    statusDiv.innerHTML = '<div class="status-message status-loading">⏳ Генерация PDF отчета...</div>';
+    
+    try {
+        const response = await fetch(`http://localhost:8001/sessions/${sid}/report`);
+        if (response.ok) {
+            // Создаем ссылку для скачивания
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `session_report_${sid}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            statusDiv.innerHTML = '<div class="status-message status-success">✅ Отчет успешно сгенерирован и скачан</div>';
+        } else {
+            const errorText = await response.text();
+            statusDiv.innerHTML = `<div class="status-message status-error">❌ Ошибка генерации отчета: ${response.status} ${errorText}</div>`;
+        }
+    } catch (err) {
+        statusDiv.innerHTML = `<div class="status-message status-error">❌ Ошибка: ${err.message}</div>`;
+    }
+}
+
+async function previewReport() {
+    const sid = document.getElementById("sid").value;
+    const statusDiv = document.getElementById("reportStatus");
+    
+    statusDiv.innerHTML = '<div class="status-message status-loading">⏳ Загрузка предпросмотра...</div>';
+    
+    try {
+        const response = await fetch(`http://localhost:8001/sessions/${sid}/report-preview`);
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Показываем предпросмотр в красивом формате
+            let previewHTML = `
+                <div class="report-preview">
+                    <h3>📊 Предпросмотр отчета - Сессия ${data.session_id}</h3>
+                    
+                    <h4>📋 Информация о сессии:</h4>
+                    <ul>
+                        <li><strong>Группа:</strong> ${data.session_info.group}</li>
+                        <li><strong>Папка:</strong> ${data.session_info.folder_id}</li>
+                        <li><strong>Длительность:</strong> ${data.session_info.duration_seconds?.toFixed(1) || '—'} сек</li>
+                        <li><strong>Точек данных:</strong> ${data.session_info.total_samples || '—'}</li>
+                    </ul>
+                    
+                    <h4>👩‍⚕️ Пациентка:</h4>
+                    <ul>
+                        <li><strong>Возраст:</strong> ${data.patient_info.age || '—'} лет</li>
+                        <li><strong>Срок беременности:</strong> ${data.patient_info.gestation_weeks || '—'} недель</li>
+                        <li><strong>Диагноз:</strong> ${data.patient_info.diagnosis || '—'}</li>
+                    </ul>
+                    
+                    <h4>📈 Статистика BPM:</h4>
+                    <ul>
+                        <li><strong>Среднее:</strong> ${data.analysis.bpm_statistics.mean?.toFixed(1) || '—'}</li>
+                        <li><strong>Медиана:</strong> ${data.analysis.bpm_statistics.median?.toFixed(1) || '—'}</li>
+                        <li><strong>Максимум:</strong> ${data.analysis.bpm_statistics.max?.toFixed(1) || '—'}</li>
+                        <li><strong>Минимум:</strong> ${data.analysis.bpm_statistics.min?.toFixed(1) || '—'}</li>
+                        <li><strong>Стандартное отклонение:</strong> ${data.analysis.bpm_statistics.std?.toFixed(1) || '—'}</li>
+                    </ul>
+                    
+                    <h4>⚠️ События:</h4>
+                    <ul>
+                        <li><strong>Децелерации:</strong> ${data.analysis.events.decelerations}</li>
+                        <li><strong>Эпизоды тахикардии:</strong> ${data.analysis.events.tachycardia}</li>
+                        <li><strong>Эпизоды брадикардии:</strong> ${data.analysis.events.bradycardia}</li>
+                    </ul>
+                    
+                    <h4>📝 Заключение:</h4>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3;">
+                        ${data.conclusion}
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="btn" onclick="generateReport()">📄 Сгенерировать полный PDF отчет</button>
+                    </div>
+                </div>
+            `;
+            
+            statusDiv.innerHTML = previewHTML;
+        } else {
+            const errorText = await response.text();
+            statusDiv.innerHTML = `<div class="status-message status-error">❌ Ошибка загрузки предпросмотра: ${response.status} ${errorText}</div>`;
+        }
+    } catch (err) {
+        statusDiv.innerHTML = `<div class="status-message status-error">❌ Ошибка: ${err.message}</div>`;
+    }
 }
 
 async function startStream() {

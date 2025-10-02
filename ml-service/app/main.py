@@ -1,8 +1,11 @@
+# app/main.py (исправленная версия)
+
+from datetime import datetime
 import os
 import sys
 import asyncio
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any  # ДОБАВЛЕН Any
 import json
 
 import numpy as np
@@ -10,7 +13,11 @@ import pandas as pd
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ml.patient_data import patient_manager
 
+from app.ml.report_generator import report_generator
+from fastapi.responses import FileResponse
+import tempfile
 
 # --------------------
 # Логирование
@@ -38,6 +45,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --------------------
+# Вспомогательные функции для анализа
+# --------------------
+def compute_basic_features(df: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Упрощенная версия вычисления признаков для анализа сессии.
+    """
+    bpm = df.get("bpm_filtered", df.get("bpm"))
+    uterus = df.get("uterus_filtered", df.get("uterus")) if "uterus" in df else None
+    
+    # Базовые статистики BPM
+    bpm_valid = bpm.dropna()
+    
+    features = {
+        "duration_seconds": float(df["time"].max() - df["time"].min()) if len(df) > 0 else 0,
+        "total_samples": len(df),
+        "bpm_samples": len(bpm_valid),
+        
+        # Статистики BPM
+        "mean_bpm": float(bpm_valid.mean()) if len(bpm_valid) > 0 else None,
+        "median_bpm": float(bpm_valid.median()) if len(bpm_valid) > 0 else None,
+        "max_bpm": float(bpm_valid.max()) if len(bpm_valid) > 0 else None,
+        "min_bpm": float(bpm_valid.min()) if len(bpm_valid) > 0 else None,
+        "std_bpm": float(bpm_valid.std()) if len(bpm_valid) > 0 else None,
+        
+        # События (упрощенные)
+        "decel_count": 0,  # Заглушка
+        "tachy_count": len(bpm_valid[bpm_valid > 160]) if len(bpm_valid) > 0 else 0,
+        "brady_count": len(bpm_valid[bpm_valid < 110]) if len(bpm_valid) > 0 else 0,
+    }
+    
+    return features
 
 # --------------------
 # Вспомогательные классы для предсказаний
@@ -193,7 +233,7 @@ def session_info(sid: str, sample_rate: float = Query(4.0, description="Част
 
 @app.get("/sessions/{sid}/analysis")
 def session_analysis(sid: str, sample_rate: float = Query(4.0)):
-    """Анализ сессии с вычислением правильных статистик"""
+    """Анализ сессии с учетом данных пациентки"""
     sessions = scan_sessions()
     if sid not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -201,30 +241,59 @@ def session_analysis(sid: str, sample_rate: float = Query(4.0)):
     prepared = prepare_session(sessions[sid], sample_rate=sample_rate)
     df = prepared["merged"]
 
-    # ПРАВИЛЬНОЕ вычисление статистик
-    bpm_vals = df["bpm"].dropna()
-    
-    if len(bpm_vals) == 0:
-        features = {
-            "mean_bpm": None, "max_bpm": None, "min_bpm": None, "std_bpm": None,
-            "median_bpm": None, "duration_seconds": 0.0, "total_samples": len(df),
-            "bpm_samples": 0, "uterus_samples": len(df["uterus"].dropna())
-        }
-    else:
-        features = {
-            "mean_bpm": float(np.mean(bpm_vals)),  # ПРАВИЛЬНОЕ среднее
-            "max_bpm": float(np.max(bpm_vals)),
-            "min_bpm": float(np.min(bpm_vals)), 
-            "std_bpm": float(np.std(bpm_vals)),
-            "median_bpm": float(np.median(bpm_vals)),
-            "duration_seconds": float(df["time"].iloc[-1] - df["time"].iloc[0]) if len(df) > 1 else 0.0,
-            "total_samples": len(df),
-            "bpm_samples": len(bpm_vals),
-            "uterus_samples": len(df["uterus"].dropna())
-        }
+    # Получаем данные пациентки
+    session_info = sessions[sid]
+    patient_info = patient_manager.get_patient_info(
+        session_info.folder_id, 
+        session_info.group
+    )
 
-    clean_features = clean_for_json(features)
-    return {"meta": prepared["meta"], "features": clean_features}
+    # Вычисляем фичи с учетом данных пациентки
+    features = compute_basic_features(df)
+    
+    # Добавляем информацию о пациентке в ответ
+    response_data = {
+        "meta": prepared["meta"],
+        "features": features,
+        "patient_info": {
+            "age": patient_info.get("age"),
+            "gestation_weeks": patient_info.get("gestation_weeks"),
+            "diagnosis": patient_info.get("diagnosis"),
+            "has_diabetes": patient_info.get("has_diabetes"),
+            "has_anemia": patient_info.get("has_anemia"),
+            "has_hypertension": patient_info.get("has_hypertension"),
+            "risk_factors": patient_info.get("risk_factors", {}),
+            # Добавляем медицинские показатели
+            "Ph": patient_info.get("Ph"),
+            "Glu": patient_info.get("Glu"), 
+            "LAC": patient_info.get("LAC"),
+            "BE": patient_info.get("BE"),
+            "CO2": patient_info.get("CO2")
+        }
+    }
+
+    clean_response = clean_for_json(response_data)
+    return clean_response
+
+@app.get("/sessions/{sid}/patient-info")
+def get_patient_info(sid: str):
+    """Получить медицинскую информацию о пациентке"""
+    sessions = scan_sessions()
+    if sid not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session_info = sessions[sid]
+    patient_info = patient_manager.get_patient_info(
+        session_info.folder_id, 
+        session_info.group
+    )
+    
+    return {
+        "session_id": sid,
+        "folder_id": session_info.folder_id,
+        "group": session_info.group,
+        "patient_info": patient_info
+    }
 
 @app.get("/sessions/{sid}/data")
 def get_session_data(
@@ -350,6 +419,109 @@ async def websocket_stream(websocket: WebSocket, sid: str, sample_rate: float = 
     except Exception as e:
         logger.error(f"Ошибка в WebSocket потоке: {e}")
         await websocket.send_json({"type": "error", "message": str(e)})
+
+
+@app.get("/sessions/{sid}/report")
+def generate_session_report(sid: str):
+    """Генерирует PDF отчет по сессии"""
+    sessions = scan_sessions()
+    if sid not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Получаем данные для отчета
+    session_info = sessions[sid]
+    
+    # Получаем анализ сессии
+    prepared = prepare_session(session_info, sample_rate=4.0)
+    analysis_data = {
+        "meta": prepared["meta"],
+        "features": compute_basic_features(prepared["merged"])
+    }
+    
+    # Получаем информацию о пациентке
+    patient_info = patient_manager.get_patient_info(
+        session_info.folder_id, 
+        session_info.group
+    )
+    
+    # Подготавливаем данные сессии
+    session_data = {
+        "session_id": sid,
+        "group": session_info.group,
+        "folder_id": session_info.folder_id
+    }
+    
+    try:
+        # Генерируем PDF отчет
+        pdf_path = report_generator.generate_session_report(
+            session_data=session_data,
+            analysis_data=analysis_data,
+            patient_info=patient_info
+        )
+        
+        # Возвращаем файл
+        return FileResponse(
+            pdf_path,
+            media_type='application/pdf',
+            filename=f"session_report_{sid}_{datetime.now().strftime('%Y%m%d')}.pdf"
+        )
+        
+    except Exception as e:
+        logger.error(f"Ошибка генерации отчета: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации отчета: {str(e)}")
+
+@app.get("/sessions/{sid}/report-preview")
+def get_report_preview(sid: str):
+    """Возвращает данные для предварительного просмотра отчета (JSON)"""
+    sessions = scan_sessions()
+    if sid not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session_info = sessions[sid]
+    
+    # Получаем анализ сессии
+    prepared = prepare_session(session_info, sample_rate=4.0)
+    features = compute_basic_features(prepared["merged"])
+    
+    # Получаем информацию о пациентке
+    patient_info = patient_manager.get_patient_info(
+        session_info.folder_id, 
+        session_info.group
+    )
+    
+    # Генерируем заключение
+    conclusion = report_generator._generate_conclusion(features, patient_info)
+    
+    return {
+        "session_id": sid,
+        "session_info": {
+            "group": session_info.group,
+            "folder_id": session_info.folder_id,
+            "duration_seconds": features.get('duration_seconds'),
+            "total_samples": features.get('total_samples')
+        },
+        "patient_info": {
+            "age": patient_info.get("age"),
+            "gestation_weeks": patient_info.get("gestation_weeks"),
+            "diagnosis": patient_info.get("diagnosis"),
+            "risk_factors": patient_info.get("risk_factors", {})
+        },
+        "analysis": {
+            "bpm_statistics": {
+                "mean": features.get('mean_bpm'),
+                "median": features.get('median_bpm'),
+                "max": features.get('max_bpm'),
+                "min": features.get('min_bpm'),
+                "std": features.get('std_bpm')
+            },
+            "events": {
+                "decelerations": features.get('decel_count', 0),
+                "tachycardia": features.get('tachy_count', 0),
+                "bradycardia": features.get('brady_count', 0)
+            }
+        },
+        "conclusion": conclusion
+    }
 
 # --------------------
 # Запуск (локально, без Docker)
