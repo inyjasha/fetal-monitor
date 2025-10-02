@@ -25,6 +25,17 @@
 <main class="main-container">
     <h1 class="page-title">Архив приемов</h1>
 
+    <!-- Блок выбранного пациента -->
+    <div class="selected-patient-bar" id="selectedPatientBar" style="display: none;">
+        <div class="selected-patient-info">
+            <span class="selected-patient-label">Показаны приемы пациента:</span>
+            <span class="selected-patient-name" id="selectedPatientName"></span>
+        </div>
+        <button class="clear-filter-btn" onclick="clearPatientFilter()" title="Показать всех пациентов">
+            × Показать всех
+        </button>
+    </div>
+
     <!-- Фильтры и поиск -->
     <div class="filters-section">
         <div class="search-box">
@@ -53,6 +64,16 @@
                     <option value="completed">Завершенные</option>
                     <option value="scheduled">Запланированные</option>
                     <option value="canceled">Отмененные</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="typeFilter">Тип приема:</label>
+                <select id="typeFilter" class="filter-select">
+                    <option value="all">Все типы</option>
+                    <option value="kgt">КГТ</option>
+                    <option value="consultation">Консультация</option>
+                    <option value="examination">Осмотр</option>
                 </select>
             </div>
 
@@ -89,7 +110,16 @@
     <div class="appointments-section">
         <div class="section-header">
             <h2 class="section-title">Список приемов</h2>
-            <button class="export-btn" onclick="exportToExcel()">Экспорт в Excel</button>
+            <div class="section-actions">
+                <button class="action-btn" onclick="exportToExcel()">
+                    <span class="action-icon">📊</span>
+                    Экспорт
+                </button>
+                <button class="action-btn" onclick="printAppointments()">
+                    <span class="action-icon">🖨️</span>
+                    Печать
+                </button>
+            </div>
         </div>
 
         <div class="appointments-list" id="appointmentsList">
