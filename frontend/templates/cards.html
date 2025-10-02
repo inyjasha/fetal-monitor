@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карточка пациента - Врач КГТ</title>
+    <link rel="stylesheet" href="../static/cards.css">
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <a href="main.html" class="header-logo">КГТ</a>
+        <nav class="nav-links">
+            <a href="main.html" class="nav-link">Поиск пациента</a>
+            <a href="archive.html" class="nav-link">Архив приемов</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="doctor-name">Иванов А.С.</div>
+        <div class="doctor-icon">В</div>
+        <button class="logout-btn" onclick="logout()">Выйти</button>
+    </div>
+</header>
+
+<main class="main-container">
+    <button class="back-btn" onclick="goBack()">← Назад к результатам поиска</button>
+
+    <div class="patient-content">
+        <!-- Левый блок - Основная информация о пациенте -->
+        <div class="info-block">
+            <div class="patient-name" id="patientFullName">Иванова Мария Петровна</div>
+            <div class="info-list">
+                <div class="info-item">
+                    <span class="info-label">Дата рождения:</span>
+                    <span class="info-value" id="birthDate">22.07.1990 (33 года)</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Паспорт:</span>
+                    <span class="info-value" id="passport">4510 123456</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">СНИЛС:</span>
+                    <span class="info-value" id="snils">234-567-890 11</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Адрес регистрации:</span>
+                    <span class="info-value" id="address">г. Москва, ул. Ленина, д. 15, кв. 34</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Группа крови:</span>
+                    <span class="info-value" id="bloodGroup">A(II) Rh+</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Беременность/роды:</span>
+                    <span class="info-value" id="pregnancy">38 недель, первые роды</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Аллергия:</span>
+                    <span class="info-value" id="allergy">Пенициллин, цитрусовые</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Примечания врача:</span>
+                    <span class="info-value" id="doctorNotes">Гестационный диабет под контролем. Рекомендована госпитализация на 39 неделе.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правый блок - Информация о КГТ -->
+        <div class="info-block">
+            <h3 class="last-kgt-title">Последнее КГТ</h3>
+
+            <div id="lastKgtData">
+                <!-- Данные последнего КГТ будут здесь -->
+                <div class="kgt-data">
+                    <div class="kgt-item">
+                        <span class="kgt-label">Дата:</span>
+                        <span class="kgt-value" id="kgtDate">15.12.2023</span>
+                    </div>
+                    <div class="kgt-item">
+                        <span class="kgt-label">Время:</span>
+                        <span class="kgt-value" id="kgtTime">14:30 - 15:30</span>
+                    </div>
+                    <div class="kgt-item">
+                        <span class="kgt-label">ЧСС плода:</span>
+                        <span class="kgt-value" id="fetalHeartRate">135-150 уд/мин</span>
+                    </div>
+                    <div class="kgt-item">
+                        <span class="kgt-label">Акцелерации:</span>
+                        <span class="kgt-value" id="accelerations">5 за 20 мин</span>
+                    </div>
+                    <div class="kgt-item">
+                        <span class="kgt-label">Децелерации:</span>
+                        <span class="kgt-value" id="decelerations">Отсутствуют</span>
+                    </div>
+                    <div class="kgt-item">
+                        <span class="kgt-label">Тонус матки:</span>
+                        <span class="kgt-value" id="uterineTone">10-15 мм рт.ст.</span>
+                    </div>
+                    <div class="kgt-item">
+                        <span class="kgt-label">Примечания врача:</span>
+                        <span class="kgt-value" id="kgtDoctorNotes">Реактивный нестрессовый тест. Патологических децелераций не выявлено.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kgt-buttons">
+                <button class="kgt-btn" onclick="showKgtHistory()">История КГТ</button>
+                <button class="kgt-btn" onclick="conductNewKgt()">Провести КГТ</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="../static/cards.js"></script>
+</body>
+</html>
