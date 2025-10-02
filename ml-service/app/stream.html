@@ -12,16 +12,42 @@
     height: 300px; 
     overflow-y: scroll; 
     white-space: pre; 
+    font-family: monospace;
   }
-  #analysis {
+  #analysis, #predictions, #statistics, #patientInfo {
     background: #f0f0f0;
     padding: 10px;
     margin-top: 20px;
     border: 1px solid #ccc;
+    border-radius: 5px;
   }
   table { border-collapse: collapse; width: 100%; margin-top: 10px; }
   table, th, td { border: 1px solid #aaa; padding: 4px; text-align: center; }
   th { background: #ddd; }
+  
+  .risk-high { background-color: #ffcccc; padding: 5px; border-radius: 3px; }
+  .risk-medium { background-color: #fff0cc; padding: 5px; border-radius: 3px; }
+  .risk-low { background-color: #ccffcc; padding: 5px; border-radius: 3px; }
+  
+  .trend-rising { color: #ff4444; font-weight: bold; }
+  .trend-falling { color: #4444ff; font-weight: bold; }
+  .trend-stable { color: #44aa44; font-weight: bold; }
+  
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .risk-factor {
+    background: #ffcccc; 
+    padding: 2px 5px; 
+    margin: 2px; 
+    border-radius: 3px; 
+    display: inline-block;
+    font-size: 0.9em;
+  }
 </style>
 </head>
 <body>
@@ -31,41 +57,190 @@
   <input id="sid" value="1">
 </label>
 <button onclick="startStream()">Старт стрима</button>
+<button onclick="stopStream()" style="background-color: #ffcccc;">Стоп</button>
 
-<h2>Данные</h2>
+<h2>Данные в реальном времени</h2>
 <pre id="log"></pre>
 
-<h2>Предсказания модели</h2>
-<div id="analysis">Нажмите "Старт", чтобы загрузить</div>
+<div class="container">
+  <div>
+    <h2>📊 Текущая статистика</h2>
+    <div id="statistics">Нажмите "Старт", чтобы загрузить</div>
+  </div>
+  
+  <div>
+    <h2>🔮 Предсказания модели</h2>
+    <div id="predictions">Нажмите "Старт", чтобы загрузить</div>
+  </div>
+</div>
+
+<div class="container">
+  <div>
+    <h2>👩‍⚕️ Информация о пациентке</h2>
+    <div id="patientInfo">Нажмите "Старт", чтобы загрузить</div>
+  </div>
+  
+  <div>
+    <h2>📈 Анализ по всей сессии</h2>
+    <div id="analysis">Нажмите "Старт", чтобы загрузить</div>
+  </div>
+</div>
 
 <script>
 let ws;
+let isStreaming = false;
+
+function updateStatistics(prediction) {
+    const statsDiv = document.getElementById("statistics");
+    const stats = prediction.statistics;
+    
+    let html = `
+        <table>
+            <tr><th>Параметр</th><th>Значение</th></tr>
+            <tr><td>Текущий BPM</td><td>${stats.current_bpm?.toFixed(1) ?? "—"}</td></tr>
+            <tr><td>Средний BPM (1 мин)</td><td>${stats.mean_bpm_1min?.toFixed(1) ?? "—"}</td></tr>
+            <tr><td>Медиана BPM (1 мин)</td><td>${stats.median_bpm_1min?.toFixed(1) ?? "—"}</td></tr>
+            <tr><td>Точек в буфере</td><td>${stats.samples_in_buffer ?? 0}</td></tr>
+        </table>
+    `;
+    statsDiv.innerHTML = html;
+}
+
+function updatePredictions(prediction) {
+    const predsDiv = document.getElementById("predictions");
+    const trend = prediction.trend;
+    const risk = prediction.risk;
+    
+    const trendClass = `trend-${trend.trend}`;
+    const riskClass = `risk-${risk.risk_level}`;
+    
+    let html = `
+        <h3>📈 Тренд</h3>
+        <div class="${trendClass}">
+            <strong>Направление:</strong> ${trend.trend}<br>
+            <strong>Наклон:</strong> ${trend.slope?.toFixed(4) ?? 0}<br>
+            <strong>Уверенность:</strong> ${(trend.confidence * 100)?.toFixed(1) ?? 0}%
+        </div>
+        
+        <h3>⚠️ Оценка риска</h3>
+        <div class="${riskClass}">
+            <strong>Уровень:</strong> ${risk.risk_level}<br>
+            <strong>Счет:</strong> ${(risk.score * 100)?.toFixed(1) ?? 0}%<br>
+            <strong>Факторы:</strong> ${risk.factors.join(", ") || "нет"}
+        </div>
+        
+        <table style="margin-top: 10px;">
+            <tr><th>Вариабельность</th><th>Текущий BPM</th></tr>
+            <tr>
+                <td>${risk.variability?.toFixed(2) ?? "—"}</td>
+                <td>${risk.current_bpm?.toFixed(1) ?? "—"}</td>
+            </tr>
+        </table>
+    `;
+    predsDiv.innerHTML = html;
+}
+
+function updatePatientInfo(patientData) {
+    const patientDiv = document.getElementById("patientInfo");
+    
+    const riskFactors = patientData.risk_factors || {};
+    const activeRisks = Object.entries(riskFactors)
+        .filter(([_, isActive]) => isActive)
+        .map(([factor, _]) => factor);
+    
+    let html = `
+        <table>
+            <tr><th>Параметр</th><th>Значение</th></tr>
+            <tr><td>Возраст</td><td>${patientData.age ?? "—"} лет</td></tr>
+            <tr><td>Срок беременности</td><td>${patientData.gestation_weeks ?? "—"} недель</td></tr>
+            <tr><td>pH крови</td><td>${patientData.Ph ?? "—"}</td></tr>
+            <tr><td>Глюкоза</td><td>${patientData.Glu ?? "—"} mmol/L</td></tr>
+            <tr><td>Лактат</td><td>${patientData.LAC ?? "—"} mmol/L</td></tr>
+            <tr><td>BE</td><td>${patientData.BE ?? "—"}</td></tr>
+        </table>
+        
+        <h4>Факторы риска:</h4>
+        <div style="font-size: 0.9em;">
+            ${activeRisks.length > 0 ? 
+                activeRisks.map(risk => `<span class="risk-factor">${risk}</span>`).join('') :
+                '<span style="color: green;">Нет значимых факторов риска</span>'
+            }
+        </div>
+        
+        ${patientData.diagnosis && patientData.diagnosis !== "Неизвестно" ? `
+            <h4>Диагноз:</h4>
+            <div style="font-size: 0.9em; background: #e0e0e0; padding: 8px; border-radius: 4px;">
+                ${patientData.diagnosis}
+            </div>
+        ` : ''}
+    `;
+    patientDiv.innerHTML = html;
+}
 
 async function startStream() {
+    if (isStreaming) {
+        alert('Уже идет стриминг! Остановите текущий стрим сначала.');
+        return;
+    }
+    
     const sid = document.getElementById("sid").value;
     const log = document.getElementById("log");
     const analysisDiv = document.getElementById("analysis");
+    const predsDiv = document.getElementById("predictions");
+    const statsDiv = document.getElementById("statistics");
+    const patientDiv = document.getElementById("patientInfo");
+    
     log.textContent = "";
-    analysisDiv.textContent = "Загрузка предсказаний...";
+    predsDiv.textContent = "Загрузка предсказаний...";
+    statsDiv.textContent = "Загрузка статистики...";
+    analysisDiv.textContent = "Загрузка анализа...";
+    patientDiv.textContent = "Загрузка информации о пациентке...";
+    isStreaming = true;
 
-    // 1. Подключаем WebSocket
+    // 1. Загружаем информацию о пациентке
+    try {
+        const patientResp = await fetch(`http://localhost:8001/sessions/${sid}/patient-info`);
+        if (patientResp.ok) {
+            const patientData = await patientResp.json();
+            updatePatientInfo(patientData.patient_info);
+        }
+    } catch (err) {
+        console.log("Ошибка загрузки информации о пациентке:", err);
+        patientDiv.textContent = "Ошибка загрузки информации о пациентке";
+    }
+
+    // 2. WebSocket для потока
     ws = new WebSocket(`ws://localhost:8001/ws/stream/${sid}`);
 
     ws.onmessage = function(event) {
         const msg = JSON.parse(event.data);
-        if(msg.frame) {
-            log.textContent += `Время: ${msg.frame.time.toFixed(2)}s | BPM: ${msg.frame.bpm} | Uterus: ${msg.frame.uterus}\n`;
-        } else if(msg.meta) {
+
+        if (msg.type === "frame") {
+            log.textContent += `Время: ${msg.time.toFixed(2)}s | BPM: ${msg.bpm ?? "—"} | Uterus: ${msg.uterus ?? "—"}\n`;
+        } else if (msg.type === "meta") {
             log.textContent += `=== META ===\n${JSON.stringify(msg.meta, null, 2)}\n`;
+        } else if (msg.type === "prediction") {
+            updateStatistics(msg);
+            updatePredictions(msg);
+            log.textContent += `--- ПРЕДСКАЗАНИЕ (${msg.timestamp.toFixed(1)}s) ---\n`;
+        } else if (msg.type === "error") {
+            log.textContent += `❌ ОШИБКА: ${msg.message}\n`;
         }
+
         log.scrollTop = log.scrollHeight;
     };
 
     ws.onclose = function() {
         log.textContent += "\n❌ Соединение закрыто";
+        isStreaming = false;
     };
 
-    // 2. Подгружаем предсказания через REST API
+    ws.onerror = function() {
+        log.textContent += "\n❌ Ошибка соединения";
+        isStreaming = false;
+    };
+
+    // 3. Подгружаем анализ по всей сессии (REST API)
     try {
         const resp = await fetch(`http://localhost:8001/sessions/${sid}/analysis`);
         if (!resp.ok) {
@@ -74,37 +249,56 @@ async function startStream() {
         }
         const data = await resp.json();
 
-        // Отображаем базовую информацию
         let html = `
-          <b>Session:</b> ${data.meta.session_id} <br>
-          <b>Group:</b> ${data.meta.group} <br>
+          <b>Сессия:</b> ${data.meta.session_id} <br>
+          <b>Группа:</b> ${data.meta.group} <br>
+          <b>Папка:</b> ${data.meta.folder_id} <br>
+          <b>Длительность:</b> ${data.features.duration_seconds?.toFixed(1) ?? "—"} сек<br>
+          <b>Всего точек:</b> ${data.features.total_samples}<br>
+          <br>
+          <b>Статистика BPM:</b><br>
+          <table>
+            <tr><th>Среднее</th><th>Медиана</th><th>Максимум</th><th>Минимум</th><th>Станд. отклонение</th><th>Точек BPM</th></tr>
+            <tr>
+              <td>${data.features.mean_bpm?.toFixed(1) ?? "—"}</td>
+              <td>${data.features.median_bpm?.toFixed(1) ?? "—"}</td>
+              <td>${data.features.max_bpm?.toFixed(1) ?? "—"}</td>
+              <td>${data.features.min_bpm?.toFixed(1) ?? "—"}</td>
+              <td>${data.features.std_bpm?.toFixed(1) ?? "—"}</td>
+              <td>${data.features.bpm_samples ?? "—"}</td>
+            </tr>
+          </table>
+          
+          <br>
+          <b>События:</b><br>
+          <table>
+            <tr><th>Децелерации</th><th>Тахикардия</th><th>Брадикардия</th></tr>
+            <tr>
+              <td>${data.features.decel_count ?? 0}</td>
+              <td>${data.features.tachy_count ?? 0}</td>
+              <td>${data.features.brady_count ?? 0}</td>
+            </tr>
+          </table>
         `;
-
-        // Децелерации
-        if(data.features.decelerations && data.features.decelerations.length > 0) {
-            html += "<h3>Децелерации</h3><table><tr><th>Начало</th><th>Конец</th><th>Длительность</th></tr>";
-            data.features.decelerations.forEach(d => {
-                html += `<tr><td>${d.start.toFixed(2)}</td><td>${d.end.toFixed(2)}</td><td>${d.duration.toFixed(2)}</td></tr>`;
-            });
-            html += "</table>";
-        } else {
-            html += "<p>Децелерации не обнаружены</p>";
-        }
-
-        // Тахикардии
-        if(data.features.tachy_indices && data.features.tachy_indices.length > 0) {
-            html += `<h3>Тахикардии (всего ${data.features.tachy_indices.length})</h3>`;
-            html += `<p>${data.features.tachy_indices.slice(0,50).join(", ")} ...</p>`;
-        } else {
-            html += "<p>Тахикардии не обнаружены</p>";
-        }
-
         analysisDiv.innerHTML = html;
-
     } catch (err) {
         analysisDiv.textContent = "Ошибка загрузки анализа: " + err;
     }
 }
+
+function stopStream() {
+    if (ws) {
+        ws.close();
+    }
+    isStreaming = false;
+}
+
+// Автоматическое отключение при закрытии страницы
+window.addEventListener('beforeunload', function() {
+    if (ws) {
+        ws.close();
+    }
+});
 </script>
 </body>
 </html>
