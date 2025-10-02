@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Архив приемов - Врач КГТ</title>
+    <link rel="stylesheet" href="../static/archive.css">
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <a href="main.html" class="header-logo">КГТ</a>
+        <nav class="nav-links">
+            <a href="main.html" class="nav-link">Поиск пациента</a>
+            <a href="archive.html" class="nav-link active">Архив приемов</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="doctor-name">Иванов А.С.</div>
+        <div class="doctor-icon">В</div>
+        <button class="logout-btn" onclick="logout()">Выйти</button>
+    </div>
+</header>
+
+<main class="main-container">
+    <h1 class="page-title">Архив приемов</h1>
+
+    <!-- Фильтры и поиск -->
+    <div class="filters-section">
+        <div class="search-box">
+            <input type="text" class="search-input" id="archiveSearch" placeholder="Поиск по ФИО пациента или дате...">
+            <button class="search-btn" onclick="performArchiveSearch()">
+                <span class="search-icon">🔍</span>
+            </button>
+        </div>
+
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="dateFilter">Период:</label>
+                <select id="dateFilter" class="filter-select">
+                    <option value="all">За все время</option>
+                    <option value="today">Сегодня</option>
+                    <option value="week">За неделю</option>
+                    <option value="month">За месяц</option>
+                    <option value="custom">Выбрать период</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="statusFilter">Статус:</label>
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">Все приемы</option>
+                    <option value="completed">Завершенные</option>
+                    <option value="scheduled">Запланированные</option>
+                    <option value="canceled">Отмененные</option>
+                </select>
+            </div>
+
+            <div class="filter-group custom-date" id="customDateRange" style="display: none;">
+                <label for="startDate">С:</label>
+                <input type="date" id="startDate" class="date-input">
+                <label for="endDate">По:</label>
+                <input type="date" id="endDate" class="date-input">
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-section">
+        <div class="stat-card">
+            <div class="stat-number" id="totalAppointments">0</div>
+            <div class="stat-label">Всего приемов</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="completedAppointments">0</div>
+            <div class="stat-label">Завершено</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="todayAppointments">0</div>
+            <div class="stat-label">Сегодня</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="kgtProcedures">0</div>
+            <div class="stat-label">КГТ процедур</div>
+        </div>
+    </div>
+
+    <!-- Список приемов -->
+    <div class="appointments-section">
+        <div class="section-header">
+            <h2 class="section-title">Список приемов</h2>
+            <button class="export-btn" onclick="exportToExcel()">Экспорт в Excel</button>
+        </div>
+
+        <div class="appointments-list" id="appointmentsList">
+            <!-- Приемы будут загружаться здесь -->
+        </div>
+
+        <div class="pagination" id="pagination">
+            <!-- Пагинация будет генерироваться здесь -->
+        </div>
+    </div>
+</main>
+
+<script src="../static/archive.js"></script>
+</body>
+</html>

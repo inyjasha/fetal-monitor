@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск пациента - Врач КГТ</title>
+    <link rel="stylesheet" href="../static/main.css">
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <a href="main.html" class="header-logo">КГТ</a>
+        <nav class="nav-links">
+            <a href="main.html" class="nav-link active">Поиск пациента</a>
+            <a href="archive.html" class="nav-link">Архив приемов</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <!-- ПОДГРУЗКА С БД -->
+        <div class="doctor-name">Иванов А.С.</div>
+        <div class="doctor-icon">В</div>
+        <button class="logout-btn">Выйти</button>
+    </div>
+</header>
+
+<main class="search-container">
+    <h1 class="search-title">Поиск пациента</h1>
+    <div class="search-box">
+        <div class="search-input-group">
+            <input type="text" class="search-input" placeholder="Введите ФИО">
+            <button class="search-btn">
+                <span class="search-icon">🔍</span>
+            </button>
+        </div>
+    </div>
+</main>
+
+<script src="../static/main.js"></script>
+</body>
+</html>

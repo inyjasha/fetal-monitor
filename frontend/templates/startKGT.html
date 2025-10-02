@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проведение КГТ - Врач КГТ</title>
+    <link rel="stylesheet" href="../static/startKGT.css">
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <a href="main.html" class="header-logo">КГТ</a>
+        <nav class="nav-links">
+            <a href="main.html" class="nav-link">Поиск пациента</a>
+            <a href="archive.html" class="nav-link">Архив приемов</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="doctor-name">Иванов А.С.</div>
+        <div class="doctor-icon">В</div>
+        <button class="logout-btn" onclick="logout()">Выйти</button>
+    </div>
+</header>
+
+<main class="main-container">
+    <button class="back-btn" onclick="goBack()">← Назад к карточке пациента</button>
+
+    <div class="patient-info-bar">
+        <div class="patient-name">Иванова Мария Петровна</div>
+        <div class="patient-details">32 года, 38 недель беременности</div>
+    </div>
+
+    <div class="kgt-content">
+        <!-- Левая часть - Графики и управление -->
+        <div class="graphs-section">
+            <h2 class="section-title">Мониторинг КГТ</h2>
+
+            <!-- Информация о загруженном КГТ -->
+            <div class="kgt-info-bar" id="kgtInfoBar" style="display: none;">
+                <div class="kgt-info">
+                    <span class="kgt-info-label">Загруженный КГТ:</span>
+                    <span class="kgt-info-value" id="loadedKgtInfo">Не загружено</span>
+                </div>
+                <button class="close-kgt-btn" onclick="closeLoadedKGT()" title="Закрыть загруженный КГТ">×</button>
+            </div>
+
+            <!-- График ЧСС плода -->
+            <div class="graph-container">
+                <div class="graph-title">ЧСС плода: <span id="currentHeartRate">0</span> уд/мин</div>
+                <canvas id="heartRateChart" class="graph-canvas"></canvas>
+            </div>
+
+            <!-- График маточных сокращений -->
+            <div class="graph-container">
+                <div class="graph-title">Маточные сокращения: <span id="currentContractions">0</span> мм рт.ст.</div>
+                <canvas id="contractionsChart" class="graph-canvas"></canvas>
+            </div>
+
+            <!-- Статус и индикаторы -->
+            <div class="status-section">
+                <div class="status-display" id="statusDisplay">Ожидание начала мониторинга</div>
+                <div class="status-indicators">
+                    <div class="status-light green inactive" id="greenLight"></div>
+                    <div class="status-light yellow inactive" id="yellowLight"></div>
+                </div>
+            </div>
+
+            <!-- Управление -->
+            <div class="controls-section">
+                <button class="control-btn" id="startBtn" onclick="startMonitoring()">Начать мониторинг</button>
+                <button class="control-btn" id="stopBtn" onclick="stopMonitoring()" disabled>Остановить</button>
+                <button class="control-btn" id="loadKgtBtn" onclick="loadKGTFromDB()">Загрузить КГТ</button>
+                <button class="control-btn" id="saveBtn" onclick="saveResults()" disabled>Сохранить результаты</button>
+            </div>
+
+            <div class="timer" id="timer">Время: 00:00</div>
+        </div>
+
+        <!-- Правая часть - Показатели матери -->
+        <div class="vital-signs-section">
+            <h2 class="vital-signs-title">Показатели матери</h2>
+            <div class="vital-signs-grid">
+                <div class="vital-sign">
+                    <span class="vital-label">Пульс</span>
+                    <span class="vital-value">
+                        <span id="motherPulse">0</span>
+                        <span class="vital-unit">уд/мин</span>
+                    </span>
+                </div>
+                <div class="vital-sign">
+                    <span class="vital-label">SpO₂</span>
+                    <span class="vital-value">
+                        <span id="motherSpO2">0</span>
+                        <span class="vital-unit">%</span>
+                    </span>
+                </div>
+                <div class="vital-sign">
+                    <span class="vital-label">Артериальное давление</span>
+                    <span class="vital-value">
+                        <span id="motherBP">0/0</span>
+                        <span class="vital-unit">мм рт.ст.</span>
+                    </span>
+                </div>
+                <div class="vital-sign">
+                    <span class="vital-label">Температура тела</span>
+                    <span class="vital-value">
+                        <span id="motherTemp">0.0</span>
+                        <span class="vital-unit">°C</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Блок истории КГТ -->
+            <div class="kgt-history-section">
+                <h3 class="kgt-history-title">История КГТ пациента</h3>
+                <div class="kgt-history-list" id="kgtHistoryList">
+                    <!-- Список предыдущих КГТ будет загружаться здесь -->
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="../static/startKGT.js"></script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+@import url('reset.css');
+
+:root {
+    --color-background: #fce7d2;
+    --color-header: #ddc4a7;
+    --color-text: #593e23;
+    --color-accent: #f0d5b8;
+    --color-disabled: #e0d0c0;
+    --shadow-light: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
+    --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.1);
+    --radius-small: 5px;
+    --radius-medium: 8px;
+    --radius-large: 15px;
+    --radius-circle: 50%;
+    --transition-normal: 0.3s ease;
+}
+
+body {
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    color: var(--color-text);
+    color: #593e23;
+    min-height: 100vh;
+    font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+/* Шапка */
+.header {
+    background-color: var(--color-header);
+    background-color: #ddc4a7;
+    padding: 15px 30px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: justify;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    box-shadow: var(--shadow-light);
+    -webkit-box-shadow: var(--shadow-light);
+}
+
+.header-left {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+}
+
+.header-logo {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    border-radius: var(--radius-circle);
+    border-radius: 50%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    margin-right: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    text-decoration: none;
+    color: var(--color-text);
+    color: #593e23;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-links {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    gap: 20px;
+}
+
+.nav-link {
+    color: var(--color-text);
+    color: #593e23;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 8px 15px;
+    border-radius: var(--radius-small);
+    border-radius: 5px;
+    -webkit-transition: background-color var(--transition-normal);
+    -o-transition: background-color var(--transition-normal);
+    transition: background-color var(--transition-normal);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-link.active {
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    outline: none;
+}
+
+.header-right {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    gap: 15px;
+}
+
+.doctor-name {
+    font-weight: bold;
+}
+
+.doctor-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    border-radius: var(--radius-circle);
+    border-radius: 50%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    color: var(--color-text);
+    color: #593e23;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: 15px;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: var(--radius-small);
+    border-radius: 5px;
+    -webkit-transition: color var(--transition-normal);
+    -o-transition: color var(--transition-normal);
+    transition: color var(--transition-normal);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.logout-btn:hover,
+.logout-btn:focus {
+    color: #3a2816;
+    outline: none;
+}
+
+/* Основной контейнер */
+.main-container {
+    padding: 30px 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.back-btn {
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    color: var(--color-text);
+    color: #593e23;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-medium);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 20px;
+    -webkit-transition: background-color var(--transition-normal);
+    -o-transition: background-color var(--transition-normal);
+    transition: background-color var(--transition-normal);
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.back-btn:hover,
+.back-btn:focus {
+    background-color: var(--color-accent);
+    background-color: #f0d5b8;
+    outline: none;
+}
+
+/* Секция поиска */
+.search-section {
+    background-color: var(--color-header);
+    background-color: #ddc4a7;
+    padding: 25px;
+    border-radius: var(--radius-large);
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow-medium);
+    -webkit-box-shadow: var(--shadow-medium);
+}
+
+.search-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.search-input-group {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    gap: 10px;
+}
+
+.search-input {
+    -webkit-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    padding: 15px;
+    border: none;
+    border-radius: var(--radius-medium);
+    border-radius: 10px;
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    color: var(--color-text);
+    color: #593e23;
+    font-size: 16px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.search-input:focus {
+    outline: 2px solid var(--color-text);
+    outline: 2px solid #593e23;
+    outline-offset: 2px;
+}
+
+.search-input::-ms-clear {
+    display: none;
+}
+
+.search-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-circle);
+    border-radius: 50%;
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    border: none;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-transition: background-color var(--transition-normal);
+    -o-transition: background-color var(--transition-normal);
+    transition: background-color var(--transition-normal);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.search-btn:hover,
+.search-btn:focus {
+    background-color: var(--color-accent);
+    background-color: #f0d5b8;
+    outline: none;
+}
+
+.search-icon {
+    font-size: 20px;
+    color: var(--color-text);
+    color: #593e23;
+}
+
+/* Секция результатов */
+.results-section {
+    background-color: var(--color-header);
+    background-color: #ddc4a7;
+    padding: 25px;
+    border-radius: var(--radius-large);
+    border-radius: 15px;
+    box-shadow: var(--shadow-medium);
+    -webkit-box-shadow: var(--shadow-medium);
+}
+
+.results-title {
+    font-size: 22px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.patients-list {
+    display: -ms-grid;
+    display: grid;
+    gap: 15px;
+}
+
+.patient-card {
+    background-color: var(--color-background);
+    background-color: #fce7d2;
+    padding: 20px;
+    border-radius: var(--radius-medium);
+    border-radius: 10px;
+    cursor: pointer;
+    -webkit-transition: -webkit-transform var(--transition-normal), box-shadow var(--transition-normal);
+    transition: -webkit-transform var(--transition-normal), box-shadow var(--transition-normal);
+    -o-transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal), -webkit-transform var(--transition-normal);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.patient-card:hover,
+.patient-card:focus {
+    -webkit-transform: translateY(-2px);
+    -ms-transform: translateY(-2px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    -webkit-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    outline: none;
+}
+
+.patient-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--color-text);
+    color: #593e23;
+}
+
+.patient-info {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.patient-detail {
+    font-size: 14px;
+    color: var(--color-text);
+    color: #593e23;
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px;
+    font-size: 18px;
+    color: var(--color-text);
+    color: #593e23;
+    font-style: italic;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .header {
+        padding: 15px;
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .header-left, .header-right {
+        width: 100%;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+    }
+
+    .search-input-group {
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+    }
+
+    .search-btn {
+        width: 100%;
+        border-radius: var(--radius-medium);
+        border-radius: 10px;
+        height: 50px;
+    }
+
+    .nav-links {
+        -ms-flex-wrap: wrap;
+        flex-wrap: wrap;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+    }
+
+    .main-container {
+        padding: 20px 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-links {
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .header-right {
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .logout-btn {
+        margin-left: 0;
+        margin-top: 5px;
+    }
+
+    .main-container {
+        padding: 20px 15px;
+    }
+
+    .search-section, .results-section {
+        padding: 20px;
+    }
+
+    .patient-card {
+        padding: 15px;
+    }
+}
+
+/* Поддержка Grid для старых браузеров */
+@supports not (display: grid) {
+    .patients-list {
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column;
+    }
+}
+
+/* Улучшение для сенсорных устройств */
+@media (hover: none) and (pointer: coarse) {
+    .patient-card:hover {
+        -webkit-transform: none;
+        -ms-transform: none;
+        transform: none;
+    }
+
+    .patient-card:active {
+        background-color: var(--color-accent);
+        background-color: #f0d5b8;
+    }
+}
